@@ -1,14 +1,93 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Nomar POC App</title>
+  <meta charset="UTF-8" />
+  <title>Amazon Connect AppMessageBridge POC</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    button {
+      padding: 12px 20px;
+      margin-right: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
   </style>
 </head>
+
 <body>
-  <h1>Nomar's 3P App Loaded Successfully 🎉</h1>
-  <p>If you're seeing this inside Amazon Connect Agent Workspace, the POC is working!</p>
+  <h2>Amazon Connect AppMessageBridge — Minimal POC</h2>
+
+  <button id="accept">Accept</button>
+  <button id="end">End</button>
+
+  <div id="status">Status: Idle</div>
+
+  <!-- Amazon Connect App SDK via CDN (simple, free, no bundler required) -->
+  <script type="module">
+    import { App } from "https://cdn.skypack.dev/@amazon-connect/app";
+
+    // Initialize the bridge
+    const app = new App();
+
+    const statusDiv = document.getElementById("status");
+
+    function updateStatus(text) {
+      statusDiv.innerText = "Status: " + text;
+      console.log(text);
+    }
+
+    // Listen for Agent state changes
+    app.events.agent.onAgentStateChange((evt) => {
+      updateStatus("Agent State: " + (evt.agentState?.name ?? "Unknown"));
+    });
+
+    // Listen for incoming contact
+    app.events.contact.onIncoming((evt) => {
+      updateStatus("Incoming Contact: " + evt.contactId);
+    });
+
+    // Listen for connected contact
+    app.events.contact.onConnected((evt) => {
+      updateStatus("Connected Contact: " + evt.contactId);
+    });
+
+    // Listen for ended contact
+    app.events.contact.onEnded((evt) => {
+      updateStatus("Contact Ended: " + evt.contactId);
+    });
+
+    // Accept button
+    document.getElementById("accept").onclick = async () => {
+      const c = await app.requests.contact.getActiveContact();
+      if (c) {
+        await app.requests.contact.accept(c.contactId);
+        updateStatus("Accepting contact...");
+      } else {
+        updateStatus("No active incoming contact.");
+      }
+    };
+
+    // End button
+    document.getElementById("end").onclick = async () => {
+      const c = await app.requests.contact.getActiveContact();
+      if (c) {
+        await app.requests.contact.end(c.contactId);
+        updateStatus("Ending contact...");
+      } else {
+        updateStatus("No active connected contact.");
+      }
+    };
+  </script>
 </body>
 </html>
