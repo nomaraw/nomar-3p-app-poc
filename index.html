@@ -1,169 +1,29 @@
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>AppMessageBridge POC (Events Only)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background: var(--bg); color: var(--text); }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
-    h2 { margin: 0 0 12px; }
-    .card { background: var(--card); border-radius: 12px; padding: 16px; }
-    button { padding: 10px 16px; border-radius: 10px; border: none; cursor: pointer; margin-right: 8px; margin-bottom: 8px; font-weight: 600;}
-    .btn { background:#334155; color:var(--text); }
-    .btn.green { background: var(--accent); color:#0b0f19; }
-    .btn.orange { background: var(--warn); color:#0b0f19; }
-    .btn.red { background: var(--danger); color:#fff; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
-    .log { margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; white-space: pre-wrap; background:#0b1220; border-radius: 8px; padding: 12px; color: var(--muted); }
-    .badge { display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; color:#cbd5e1; font-size:12px; margin-left:8px; }
-    .status { font-size: 15px; margin-top: 8px; color: var(--muted); }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h2>Amazon Connect AppMessageBridge — Events‑Only POC</h2>
-    <div class="card">
-      <div class="row">
-        <span>Mode:</span>
-        <span id="mode" class="badge">Detecting…</span>
-      </div>
+https://nomaraw.github.io/nomar-3p-app-poc/dist/amazon-connect-app.umd.js</script>
+<script>
+  (async () => {
+    // Initialize AppMessageBridge
+    const app = await window.AmazonConnectApp.App.init();
 
-      <div class="status" id="agent">Agent state: —</div>
-      <div class="status" id="contact">Contact state: —</div>
+    // Lifecycle confirms the bridge
+    app.on('create', () => console.log('[Workspace] lifecycle: create'));
+    app.on('destroy', () => console.log('[Workspace] lifecycle: destroy'));
 
-      <h3 style="margin-top:16px;">Mock Controls (used when not inside Agent Workspace)</h3>
-      <div class="row">
-        <button class="btn green" id="mockIncoming">Simulate Incoming</button>
-        <button class="btn orange" id="mockConnected">Simulate Connected</button>
-        <button class="btn red" id="mockEnded">Simulate Ended</button>
-        <button class="btn" id="mockAgentAvail">Agent → Available</button>
-        <button class="btn" id="mockAgentBusy">Agent → Busy</button>
-      </div>
+    // Cost-free agent interactions (idle state)
+    const agentInfo = await app.agent.get();
+    console.log('[Agent] snapshot:', agentInfo);
 
-      <div class="log" id="log">Logs:
-      </div>
-    </div>
-  </div>
+    app.agent.on('stateChange', (state) => {
+      console.log('[Agent] stateChange:', state);
+    });
 
-  <!-- Use the official App SDK via CDN for a truly zero-build POC -->
-  <script type="module">
-    import { App } from "https://cdn.skypack.dev/@amazon-connect/app";
+    // Optional: contact updates (only fire if you use **Test Chat** in the console; still non-billable)
+    app.contact.on('update', (contact) => {
+      console.log('[Contact] update:', contact);
+    });
 
-    const logDiv = document.getElementById('log');
-    const agentDiv = document.getElementById('agent');
-    const contactDiv = document.getElementById('contact');
-    const modeBadge = document.getElementById('mode');
-
-    const state = { mode: 'detecting', agent: '—', contact: '—' };
-
-    function log(msg) {
-      const t = new Date().toLocaleTimeString();
-      logDiv.textContent += `\n[${t}] ${msg}`;
-      logDiv.scrollTop = logDiv.scrollHeight;
-      console.log(msg);
-    }
-
-    function setAgent(text) {
-      state.agent = text;
-      agentDiv.textContent = `Agent state: ${text}`;
-    }
-
-    function setContact(text) {
-      state.contact = text;
-      contactDiv.textContent = `Contact state: ${text}`;
-    }
-
-    function setMode(m) {
-      state.mode = m;
-      modeBadge.textContent = m;
-      modeBadge.style.background = m === 'Workspace' ? '#0ea5e9' : '#374151';
-    }
-
-    // Detect if running inside Agent Workspace (iframe + SDK can talk to parent)
-    // The App constructor will throw or be unable to bind if not in workspace context.
-    let app;
-    let inWorkspace = false;
-
-    try {
-      app = new App();
-      inWorkspace = true; // If App constructs, assume workspace context is available.
-    } catch (e) {
-      inWorkspace = false;
-    }
-
-    if (inWorkspace) {
-      setMode('Workspace');
-      log('Initialized AppMessageBridge — listening to workspace events.');
-
-      // Subscribe to agent state changes
-      app.events.agent.onAgentStateChange((evt) => {
-        const name = evt.agentState?.name ?? 'Unknown';
-        setAgent(name);
-        log(`Workspace event: agent.onAgentStateChange → ${name}`);
-      });
-
-      // Contact lifecycle (no telephony actions — we only observe)
-      app.events.contact.onIncoming((evt) => {
-        setContact(`INCOMING (${evt.contactId ?? 'unknown'})`);
-        log(`Workspace event: contact.onIncoming → ${evt.contactId}`);
-      });
-
-      app.events.contact.onConnected((evt) => {
-        setContact(`CONNECTED (${evt.contactId ?? 'unknown'})`);
-        log(`Workspace event: contact.onConnected → ${evt.contactId}`);
-      });
-
-      app.events.contact.onEnded((evt) => {
-        setContact(`ENDED (${evt.contactId ?? 'unknown'})`);
-        log(`Workspace event: contact.onEnded → ${evt.contactId}`);
-      });
-
-      // Optional: read initial agent status if permission is granted.
-      // If not permitted, it will fail silently; that’s fine for POC.
-      (async () => {
-        try {
-          const status = await app.requests.agent.getStatus();
-          if (status?.name) {
-            setAgent(status.name);
-            log(`Initial agent status from workspace: ${status.name}`);
-          } else {
-            log('Initial agent status not available (permission not granted).');
-          }
-        } catch {
-          log('Unable to read initial agent status (likely no permission).');
-        }
-      })();
-
-    } else {
-      setMode('Standalone (Mock)');
-      log('Running outside Agent Workspace — mock mode enabled.');
-
-      // Mock triggers
-      document.getElementById('mockIncoming').onclick = () => {
-        setContact('INCOMING (mock)');
-        log('Mock: contact.onIncoming');
-      };
-      document.getElementById('mockConnected').onclick = () => {
-        setContact('CONNECTED (mock)');
-        log('Mock: contact.onConnected');
-      };
-      document.getElementById('mockEnded').onclick = () => {
-        setContact('ENDED (mock)');
-        log('Mock: contact.onEnded');
-      };
-      document.getElementById('mockAgentAvail').onclick = () => {
-        setAgent('Available (mock)');
-        log('Mock: agent.onAgentStateChange → Available');
-      };
-      document.getElementById('mockAgentBusy').onclick = () => {
-        setAgent('Busy (mock)');
-        log('Mock: agent.onAgentStateChange → Busy');
-      };
-    }
-  </script>
-</body>
-</html>
+    // Custom namespaced event over the bridge
+    app.events.emit('nomar.poc.ping', { ts: Date.now() });
+  })().catch(console.error);
+</script>
 ``
