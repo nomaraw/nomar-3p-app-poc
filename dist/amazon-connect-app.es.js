@@ -451,7 +451,7 @@ function ee(i, e, t, n) {
     messageOrigin: n
   };
 }
-var P = function(i, e) {
+var A = function(i, e) {
   var t = {};
   for (var n in i) Object.prototype.hasOwnProperty.call(i, n) && e.indexOf(n) < 0 && (t[n] = i[n]);
   if (i != null && typeof Object.getOwnPropertySymbols == "function")
@@ -459,7 +459,7 @@ var P = function(i, e) {
       e.indexOf(n[s]) < 0 && Object.prototype.propertyIsEnumerable.call(i, n[s]) && (t[n[s]] = i[n[s]]);
   return t;
 };
-function M(i) {
+function w(i) {
   try {
     switch (i.type) {
       case "acknowledge":
@@ -467,16 +467,16 @@ function M(i) {
       case "childConnectionClose":
         return i;
       case "childDownstreamMessage":
-        return Object.assign(Object.assign({}, i), { message: M(i.message) });
+        return Object.assign(Object.assign({}, i), { message: w(i.message) });
       case "publish": {
-        const { data: e } = i, t = P(i, ["data"]);
+        const { data: e } = i, t = A(i, ["data"]);
         return Object.assign({}, t);
       }
       case "response": {
         if (i.isError)
           return Object.assign(Object.assign({}, i), { details: { command: i.details.command } });
         {
-          const { data: e } = i, t = P(i, ["data"]);
+          const { data: e } = i, t = A(i, ["data"]);
           return Object.assign({}, t);
         }
       }
@@ -655,7 +655,7 @@ class te {
   handleDownstreamMessage({ connectionId: e, message: t, targetProviderId: n }) {
     const s = this.channels.get(e);
     if (!s) {
-      this.logger.warn("Attempted to route downstream message to child channel that does not exist", { connectionId: e, message: M(t) });
+      this.logger.warn("Attempted to route downstream message to child channel that does not exist", { connectionId: e, message: w(t) });
       return;
     }
     const { providerId: r } = s;
@@ -664,7 +664,7 @@ class te {
         connectionId: e,
         targetProviderId: n,
         actualProviderId: r,
-        message: M(t)
+        message: w(t)
       });
       return;
     }
@@ -1366,7 +1366,7 @@ function ae(i, e, t) {
         break;
     }
 }
-class A {
+class P {
   constructor(e) {
     this.mixin = e;
   }
@@ -1376,7 +1376,7 @@ class A {
 }
 class g {
   constructor(e) {
-    this._proxy = null, this._logToConsoleLevel = null, this.loggerId = N(8), typeof e == "string" ? (this.source = e, this.dataTransformer = new A(void 0)) : (this.source = e.source, e.provider && typeof e.provider == "function" ? this.providerFactory = e.provider : this.provider = e.provider, this.dataTransformer = new A(e.mixin), this.logOptions = e.options);
+    this._proxy = null, this._logToConsoleLevel = null, this.loggerId = N(8), typeof e == "string" ? (this.source = e, this.dataTransformer = new P(void 0)) : (this.source = e.source, e.provider && typeof e.provider == "function" ? this.providerFactory = e.provider : this.provider = e.provider, this.dataTransformer = new P(e.mixin), this.logOptions = e.options);
   }
   trace(e, t, n) {
     this.log(d.trace, e, t, n);
@@ -1529,7 +1529,7 @@ class H {
   }
 }
 const he = "1.0.9";
-class I extends H {
+class M extends H {
   constructor({ provider: e, instanceId: t, config: n, parameters: s, contactScope: r, scope: o, launchedBy: a }) {
     super(e), this.appInstanceId = t, this.instanceId = t, this.config = n, this.appConfig = n, this.contactScope = r, this.scope = o, this.parameters = s, this.launchedBy = a ?? {
       // Not a valid type, but launchedBy will always been provided
@@ -1635,7 +1635,7 @@ class E {
     this.logger.debug(`Sending lifecycle ${t} completed signal`), this.provider.getProxy().sendLifecycleHandlerCompleted(e, t);
   }
 }
-var w = function(i, e, t, n) {
+var C = function(i, e, t, n) {
   function s(r) {
     return r instanceof t ? r : new t(function(o) {
       o(r);
@@ -1667,7 +1667,7 @@ class ue extends E {
     super(e), this.startHandlers = /* @__PURE__ */ new Set(), this.stopHandlers = /* @__PURE__ */ new Set();
   }
   handleLifecycleChangeMessage(e) {
-    const t = new I({
+    const t = new M({
       provider: this.provider,
       instanceId: e.instanceId,
       config: e.config,
@@ -1702,7 +1702,7 @@ class ue extends E {
     this.stopHandlers.delete(e);
   }
   handleStart(e) {
-    return w(this, void 0, void 0, function* () {
+    return C(this, void 0, void 0, function* () {
       if (this.isDestroyed) {
         this.logger.error("An attempt was Start after a Destroy. No Action", {
           appInstanceId: e.context.instanceId
@@ -1722,7 +1722,7 @@ class ue extends E {
     });
   }
   handleStop(e) {
-    return w(this, void 0, void 0, function* () {
+    return C(this, void 0, void 0, function* () {
       if (this.isDestroyed) {
         this.logger.error("An attempt was Stop after a Destroy. No Action", {
           appInstanceId: e.context.instanceId
@@ -1744,7 +1744,7 @@ class ue extends E {
     });
   }
   handleDestroy(e) {
-    return w(this, void 0, void 0, function* () {
+    return C(this, void 0, void 0, function* () {
       if (this.isDestroyed) {
         this.logger.error("An attempt was invoke Destroy multiple times. No Action", {
           appInstanceId: e.context.instanceId
@@ -1764,7 +1764,7 @@ class ue extends E {
   }
   getAppLifecycleChangeParams() {
     return {
-      context: new I({
+      context: new M({
         provider: this.provider,
         instanceId: this.state.instanceId,
         config: this.state.config,
@@ -1896,13 +1896,13 @@ class D extends oe {
       };
   }
 }
-class m extends T {
+let pe = class I extends T {
   constructor(e) {
     super({ config: e, proxyFactory: () => this.createProxy() }), this.lifecycleManager = new ue(this), this.logger = new g({ provider: this, source: "app.provider" });
   }
   static init(e) {
-    const t = new m(e);
-    return m.initializeProvider(t), { provider: t };
+    const t = new I(e);
+    return I.initializeProvider(t), { provider: t };
   }
   static get default() {
     return f("AmazonConnectApp has not been initialized");
@@ -1940,12 +1940,12 @@ class m extends T {
   publish(e, t) {
     this.getProxy().publish(e, v(t));
   }
-}
+};
 var S;
 (function(i) {
   i.CurrentContactId = "CURRENT_CONTACT";
 })(S || (S = {}));
-class pe extends E {
+class fe extends E {
   constructor(e) {
     super(e);
   }
@@ -1967,13 +1967,13 @@ class pe extends E {
     }
   }
 }
-class C extends T {
+class m extends T {
   constructor(e) {
-    super({ config: e, proxyFactory: () => this.createProxy() }), this.lifecycleManager = new pe(this), this.logger = new g({ provider: this, source: "app.provider" });
+    super({ config: e, proxyFactory: () => this.createProxy() }), this.lifecycleManager = new fe(this), this.logger = new g({ provider: this, source: "app.provider" });
   }
   static init(e) {
-    const t = new C(e);
-    return C.initializeProvider(t), { provider: t };
+    const t = new m(e);
+    return m.initializeProvider(t), { provider: t };
   }
   static get default() {
     return f("AmazonConnectService has not been initialized");
@@ -2002,17 +2002,17 @@ class R extends H {
     super(e), this.instanceId = t, this.config = n;
   }
 }
-const fe = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const ye = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  AmazonConnectApp: m,
-  AmazonConnectService: C,
+  AmazonConnectApp: pe,
+  AmazonConnectService: m,
   get AppContactScope() {
     return S;
   },
-  AppContext: I,
+  AppContext: M,
   ServiceContext: R
 }, Symbol.toStringTag, { value: "Module" }));
 export {
-  fe as AmazonConnectApp
+  ye as default
 };
 //# sourceMappingURL=amazon-connect-app.es.js.map
