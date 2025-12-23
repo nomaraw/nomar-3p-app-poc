@@ -451,7 +451,7 @@ function ee(i, e, t, n) {
     messageOrigin: n
   };
 }
-var A = function(i, e) {
+var P = function(i, e) {
   var t = {};
   for (var n in i) Object.prototype.hasOwnProperty.call(i, n) && e.indexOf(n) < 0 && (t[n] = i[n]);
   if (i != null && typeof Object.getOwnPropertySymbols == "function")
@@ -469,14 +469,14 @@ function M(i) {
       case "childDownstreamMessage":
         return Object.assign(Object.assign({}, i), { message: M(i.message) });
       case "publish": {
-        const { data: e } = i, t = A(i, ["data"]);
+        const { data: e } = i, t = P(i, ["data"]);
         return Object.assign({}, t);
       }
       case "response": {
         if (i.isError)
           return Object.assign(Object.assign({}, i), { details: { command: i.details.command } });
         {
-          const { data: e } = i, t = A(i, ["data"]);
+          const { data: e } = i, t = P(i, ["data"]);
           return Object.assign({}, t);
         }
       }
@@ -1366,7 +1366,7 @@ function ae(i, e, t) {
         break;
     }
 }
-class P {
+class A {
   constructor(e) {
     this.mixin = e;
   }
@@ -1376,7 +1376,7 @@ class P {
 }
 class g {
   constructor(e) {
-    this._proxy = null, this._logToConsoleLevel = null, this.loggerId = N(8), typeof e == "string" ? (this.source = e, this.dataTransformer = new P(void 0)) : (this.source = e.source, e.provider && typeof e.provider == "function" ? this.providerFactory = e.provider : this.provider = e.provider, this.dataTransformer = new P(e.mixin), this.logOptions = e.options);
+    this._proxy = null, this._logToConsoleLevel = null, this.loggerId = N(8), typeof e == "string" ? (this.source = e, this.dataTransformer = new A(void 0)) : (this.source = e.source, e.provider && typeof e.provider == "function" ? this.providerFactory = e.provider : this.provider = e.provider, this.dataTransformer = new A(e.mixin), this.logOptions = e.options);
   }
   trace(e, t, n) {
     this.log(d.trace, e, t, n);
@@ -2011,9 +2011,8 @@ const fe = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   },
   AppContext: I,
   ServiceContext: R
-}, Symbol.toStringTag, { value: "Module" })), ye = AppModule.App;
+}, Symbol.toStringTag, { value: "Module" }));
 export {
-  ye as App,
-  fe as AppModule
+  fe as AmazonConnectApp
 };
 //# sourceMappingURL=amazon-connect-app.es.js.map
