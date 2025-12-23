@@ -1,4 +1,8 @@
-// Re-export the Agent Workspace SDK for browser usage.
-// The `App` symbol is what you call to `init()` inside your iframe.
-export * as AppModule from '@amazon-connect/app';
-export const App = AppModule.App;
+// src/sdk-entry.js
+
+// Import the App symbol directly from the Agent Workspace SDK:
+import { App } from '@amazon-connect/app';
+
+// Re-export it so the UMD build exposes window.AmazonConnectApp.App
+export { App };
+``
