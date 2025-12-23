@@ -1,35 +1,34 @@
 
-<script src="https://nomaraw.github.io/nomar-3p-app-poc/dist/amazon-connect-app.umd.js"></script>
+<script>https://nomaraw.github.io/nomar-3p-app-poc/dist/amazon-connect-app.umd.js</script>
 
 <script>
   (async () => {
     try {
-      // Initialize AppMessageBridge
-      const app = await window.AmazonConnectApp.App.init();
+      // The UMD global is the SDK object itself.
+      const SDK = window.AmazonConnectApp;
 
-      console.log("APP INIT OK", app);
+      if (!SDK || typeof SDK.init !== 'function') {
+        throw new Error('SDK not loaded or missing init()');
+      }
 
-      // Lifecycle confirms the bridge
-      app.on("create", () => console.log("[Workspace] lifecycle: create"));
-      app.on("destroy", () => console.log("[Workspace] lifecycle: destroy"));
-
-      // Cost-free agent interactions (idle state)
-      const agentInfo = await app.agent.get();
-      console.log("[Agent] snapshot:", agentInfo);
-
-      app.agent.on("stateChange", (state) => {
-        console.log("[Agent] stateChange:", state);
+      // Initialize per AWS guide: onCreate/onDestroy lifecycle
+      const { provider } = SDK.init({
+        onCreate: (event) => {
+          const { appInstanceId } = event?.context || {};
+          console.log('App initialized (bridge OK). appInstanceId=', appInstanceId);
+        },
+        onDestroy: () => {
+          console.log('App being destroyed');
+        },
       });
 
-      // Optional: contact updates (fire only in Test Chat)
-      app.contact.on("update", (contact) => {
-        console.log("[Contact] update:", contact);
-      });
+      console.log('APP INIT OK', provider);
+      // At this point the bridge is established—no contact required, no billing.
 
-      // Custom event
-      app.events.emit("nomar.poc.ping", { ts: Date.now() });
+      // (Optional) If you later use Test Chat, you can wire contact/agent handlers here.
+
     } catch (err) {
-      console.error("APP INIT FAILED", err);
+      console.error('APP INIT FAILED', err);
     }
   })();
 </script>
