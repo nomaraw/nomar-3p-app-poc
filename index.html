@@ -1,54 +1,30 @@
 
 <!DOCTYPE html>
 <html>
-  <body style="font-family: sans-serif; padding: 20px;">
+  <body style="font-family: system-ui, sans-serif; padding: 20px;">
     <h2>Nomar 3P App – Heartbeat Test</h2>
-    <div id="status">Loading SDK…</div>
+    <div id="status">Loading…</div>
 
-    <!-- 1) Load the official SDK directly from AWS CDN (NO BUILDING REQUIRED) -->
-    <script src="https://unpkg.com/@amazon-connect/app/dist/app.min.js"></script>
+    <script type="module">
+      const status = (msg) => { document.getElementById('status').textContent = msg; };
 
-    <!-- 2) AppMessageBridge initialization -->
-    <script>
-      (async () => {
-        const status = (msg) => (document.getElementById("status").innerText = msg);
-
-        // IMPORTANT: This only succeeds INSIDE Amazon Connect Agent Workspace iframe
-        if (window.top === window) {
-          status("❌ Not running inside Agent Workspace iframe. Open me from the Apps launcher.");
-          return;
-        }
-
+      // Must run inside Amazon Connect Agent Workspace iframe.
+      // If opened directly (standalone browser tab), SDK init is expected to fail per AWS docs. [1](https://deepwiki.com/amazon-connect/amazon-connect-chat-ui-examples/4.1-interactive-messages)
+      const isEmbeddedInWorkspace = window.top !== window;
+      if (!isEmbeddedInWorkspace) {
+        status('❌ Not running inside Agent Workspace. Open me from the Apps launcher.');
+        console.warn('Open this page via the Agent Workspace Apps launcher (Third‑party app).');
+      } else {
         try {
-          // AmazonConnectApp global is provided by the CDN script above
-          const { AmazonConnectApp } = window;
+          // Import the SDK as an ES module directly (no build) using jsDelivr’s +esm transformer. [2](https://aws.amazon.com/connect/self-service/)
+          const AmazonConnectApp = await import(
+            'https://cdn.jsdelivr.net/npm/@amazon-connect/app/+esm'
+          );
 
-          if (!AmazonConnectApp || typeof AmazonConnectApp.init !== "function") {
-            status("❌ SDK failed to load.");
-            return;
-          }
-
-          // Initialize per AWS lifecycle docs
-          const { provider } = AmazonConnectApp.init({
-            onCreate: () => {
-              console.log("💚 Workspace connection established.");
-              status("💚 CONNECTED to Agent Workspace (heartbeat OK)");
-            },
-            onDestroy: () => {
-              console.log("🔴 Workspace destroying app.");
-            }
-          });
-
-          // OPTIONAL heartbeat message
-          setInterval(() => {
-            console.log("heartbeat → workspace");
-          }, 5000);
-
-        } catch (err) {
-          console.error("INIT FAILED", err);
-          status("❌ Init failed (see console).");
-        }
-      })();
-    </script>
-  </body>
-</html>
+          const sdk = AmazonConnectApp?.AmazonConnectApp;
+          if (!sdk || typeof sdk.init !== 'function') {
+            status('❌ SDK failed to load (no init).');
+            console.error('SDK import yielded:', AmazonConnectApp);
+          } else {
+            // Initialize the SDK per the Agent Workspace developer guide (lifecycle onCreate/onDestroy). [1](https://deepwiki.com/amazon-connect/amazon-connect-chat-ui-examples/4.1-interactive-messages)
+            const { provider } = sdk.init({
