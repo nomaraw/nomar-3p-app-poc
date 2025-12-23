@@ -1,34 +1,54 @@
 
-<script>https://nomaraw.github.io/nomar-3p-app-poc/dist/amazon-connect-app.umd.js</script>
+<!DOCTYPE html>
+<html>
+  <body style="font-family: sans-serif; padding: 20px;">
+    <h2>Nomar 3P App – Heartbeat Test</h2>
+    <div id="status">Loading SDK…</div>
 
-<script>
-  (async () => {
-    try {
-      // The UMD global is the SDK object itself.
-      const SDK = window.AmazonConnectApp;
+    <!-- 1) Load the official SDK directly from AWS CDN (NO BUILDING REQUIRED) -->
+    <script src="https://unpkg.com/@amazon-connect/app/dist/app.min.js"></script>
 
-      if (!SDK || typeof SDK.init !== 'function') {
-        throw new Error('SDK not loaded or missing init()');
-      }
+    <!-- 2) AppMessageBridge initialization -->
+    <script>
+      (async () => {
+        const status = (msg) => (document.getElementById("status").innerText = msg);
 
-      // Initialize per AWS guide: onCreate/onDestroy lifecycle
-      const { provider } = SDK.init({
-        onCreate: (event) => {
-          const { appInstanceId } = event?.context || {};
-          console.log('App initialized (bridge OK). appInstanceId=', appInstanceId);
-        },
-        onDestroy: () => {
-          console.log('App being destroyed');
-        },
-      });
+        // IMPORTANT: This only succeeds INSIDE Amazon Connect Agent Workspace iframe
+        if (window.top === window) {
+          status("❌ Not running inside Agent Workspace iframe. Open me from the Apps launcher.");
+          return;
+        }
 
-      console.log('APP INIT OK', provider);
-      // At this point the bridge is established—no contact required, no billing.
+        try {
+          // AmazonConnectApp global is provided by the CDN script above
+          const { AmazonConnectApp } = window;
 
-      // (Optional) If you later use Test Chat, you can wire contact/agent handlers here.
+          if (!AmazonConnectApp || typeof AmazonConnectApp.init !== "function") {
+            status("❌ SDK failed to load.");
+            return;
+          }
 
-    } catch (err) {
-      console.error('APP INIT FAILED', err);
-    }
-  })();
-</script>
+          // Initialize per AWS lifecycle docs
+          const { provider } = AmazonConnectApp.init({
+            onCreate: () => {
+              console.log("💚 Workspace connection established.");
+              status("💚 CONNECTED to Agent Workspace (heartbeat OK)");
+            },
+            onDestroy: () => {
+              console.log("🔴 Workspace destroying app.");
+            }
+          });
+
+          // OPTIONAL heartbeat message
+          setInterval(() => {
+            console.log("heartbeat → workspace");
+          }, 5000);
+
+        } catch (err) {
+          console.error("INIT FAILED", err);
+          status("❌ Init failed (see console).");
+        }
+      })();
+    </script>
+  </body>
+</html>
