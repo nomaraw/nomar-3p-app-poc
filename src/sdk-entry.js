@@ -1,8 +1,6 @@
-// src/sdk-entry.js
 
-// Import the App symbol directly from the Agent Workspace SDK:
-import { App } from '@amazon-connect/app';
+// Import the entire module as a namespace and export it as default.
+// The SDK object exposes .init(...) per AWS docs.
+import * as AmazonConnectApp from '@amazon-connect/app';
 
-// Re-export it so the UMD build exposes window.AmazonConnectApp.App
-export { App };
-``
+export default AmazonConnectApp;
