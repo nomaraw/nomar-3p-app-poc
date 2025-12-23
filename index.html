@@ -1,29 +1,35 @@
 
-https://nomaraw.github.io/nomar-3p-app-poc/dist/amazon-connect-app.umd.js</script>
+<script src="https://nomaraw.github.io/nomar-3p-app-poc/dist/amazon-connect-app.umd.js"></script>
+
 <script>
   (async () => {
-    // Initialize AppMessageBridge
-    const app = await window.AmazonConnectApp.App.init();
+    try {
+      // Initialize AppMessageBridge
+      const app = await window.AmazonConnectApp.App.init();
 
-    // Lifecycle confirms the bridge
-    app.on('create', () => console.log('[Workspace] lifecycle: create'));
-    app.on('destroy', () => console.log('[Workspace] lifecycle: destroy'));
+      console.log("APP INIT OK", app);
 
-    // Cost-free agent interactions (idle state)
-    const agentInfo = await app.agent.get();
-    console.log('[Agent] snapshot:', agentInfo);
+      // Lifecycle confirms the bridge
+      app.on("create", () => console.log("[Workspace] lifecycle: create"));
+      app.on("destroy", () => console.log("[Workspace] lifecycle: destroy"));
 
-    app.agent.on('stateChange', (state) => {
-      console.log('[Agent] stateChange:', state);
-    });
+      // Cost-free agent interactions (idle state)
+      const agentInfo = await app.agent.get();
+      console.log("[Agent] snapshot:", agentInfo);
 
-    // Optional: contact updates (only fire if you use **Test Chat** in the console; still non-billable)
-    app.contact.on('update', (contact) => {
-      console.log('[Contact] update:', contact);
-    });
+      app.agent.on("stateChange", (state) => {
+        console.log("[Agent] stateChange:", state);
+      });
 
-    // Custom namespaced event over the bridge
-    app.events.emit('nomar.poc.ping', { ts: Date.now() });
-  })().catch(console.error);
+      // Optional: contact updates (fire only in Test Chat)
+      app.contact.on("update", (contact) => {
+        console.log("[Contact] update:", contact);
+      });
+
+      // Custom event
+      app.events.emit("nomar.poc.ping", { ts: Date.now() });
+    } catch (err) {
+      console.error("APP INIT FAILED", err);
+    }
+  })();
 </script>
-``
