@@ -7,24 +7,74 @@
 
     <script type="module">
       const status = (msg) => { document.getElementById('status').textContent = msg; };
+      const log = (...a) => { console.log('[POC]', ...a); };
 
-      // Must run inside Amazon Connect Agent Workspace iframe.
-      // If opened directly (standalone browser tab), SDK init is expected to fail per AWS docs. [1](https://deepwiki.com/amazon-connect/amazon-connect-chat-ui-examples/4.1-interactive-messages)
-      const isEmbeddedInWorkspace = window.top !== window;
-      if (!isEmbeddedInWorkspace) {
+      // Must run inside the Amazon Connect Agent Workspace iframe per AWS docs. [1](https://deepwiki.com/amazon-connect/amazon-connect-chat-ui-examples/4.1-interactive-messages)
+      const isEmbedded = window.top !== window;
+      if (!isEmbedded) {
         status('❌ Not running inside Agent Workspace. Open me from the Apps launcher.');
-        console.warn('Open this page via the Agent Workspace Apps launcher (Third‑party app).');
-      } else {
-        try {
-          // Import the SDK as an ES module directly (no build) using jsDelivr’s +esm transformer. [2](https://aws.amazon.com/connect/self-service/)
-          const AmazonConnectApp = await import(
-            'https://cdn.jsdelivr.net/npm/@amazon-connect/app/+esm'
-          );
+        log('Open this page via the Agent Workspace Apps launcher (Third‑party application).');
+        // Don’t try to init outside Workspace – it’s expected to fail/time out (documented).
+        // https://docs.aws.amazon.com/agentworkspace/latest/devguide/getting-started-initialize-sdk.html
+        return;
+      }
 
-          const sdk = AmazonConnectApp?.AmazonConnectApp;
-          if (!sdk || typeof sdk.init !== 'function') {
-            status('❌ SDK failed to load (no init).');
-            console.error('SDK import yielded:', AmazonConnectApp);
-          } else {
-            // Initialize the SDK per the Agent Workspace developer guide (lifecycle onCreate/onDestroy). [1](https://deepwiki.com/amazon-connect/amazon-connect-chat-ui-examples/4.1-interactive-messages)
-            const { provider } = sdk.init({
+      // Try to import the SDK from two explicit ESM paths (no bundlers needed):
+      async function loadSdk() {
+        const candidates = [
+          // jsDelivr serving the actual ESM file inside the package
+          'https://cdn.jsdelivr.net/npm/@amazon-connect/app/lib-esm/index.js',
+          // unpkg fallback for the same file
+          'https://unpkg.com/@amazon-connect/app/lib-esm/index.js'
+        ];
+
+        for (const url of candidates) {
+          try {
+            log('Importing SDK from', url);
+            const mod = await import(url);
+            if (mod && typeof mod.AmazonConnectApp?.init === 'function') {
+              return mod.AmazonConnectApp;
+            }
+            log('SDK import succeeded but AmazonConnectApp.init not found:', Object.keys(mod || {}));
+          } catch (e) {
+            log('Import failed from', url, e);
+          }
+        }
+        return null;
+      }
+
+      (async () => {
+        const sdk = await loadSdk();
+        if (!sdk) {
+          status('❌ SDK failed to load (check Network tab; CDN may be blocked).');
+          log('If CDN access is restricted, host a copy in your repo or use localhost per AWS docs.', 
+              'Docs: Install the SDK from npm', 
+              'https://docs.aws.amazon.com/agentworkspace/latest/devguide/getting-started-install-sdk.html');
+          return;
+        }
+
+        try {
+          // Initialize per AWS developer guide with lifecycle callbacks. [1](https://deepwiki.com/amazon-connect/amazon-connect-chat-ui-examples/4.1-interactive-messages)
+          const { provider } = sdk.init({
+            onCreate: (event) => {
+              const { appInstanceId } = event?.context || {};
+              log('💚 Workspace connection established. appInstanceId =', appInstanceId);
+              status('💚 CONNECTED to Agent Workspace (heartbeat OK)');
+            },
+            onDestroy: () => {
+              log('🔴 Workspace destroying app.');
+            }
+          });
+
+          log('APP INIT OK', provider);
+          // Minimal heartbeat proving the bridge is live (no telephony, no paid messaging).
+          setInterval(() => log('heartbeat → workspace'), 5000);
+
+        } catch (err) {
+          status('❌ Init failed (see console).');
+          console.error('INIT FAILED', err);
+        }
+      })();
+    </script>
+  </body>
+</html>
